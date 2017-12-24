@@ -39,19 +39,18 @@ def get_new_puzzles(datastore):
     pre_puzzle_count = 0
 
     # Traverse the index until you stop finding new puzzles
-    while (page_number == 1 or post_puzzle_count > pre_puzzle_count):
+    while (page_number == 1 or puzzles[-1] in new_puzzles):
         logging.getLogger().info("Loading puzzles from page %s", str(page_number))
         puzzles = parse_index(get_index(INDEX_URL, page_number))
         min_id = puzzles[-1].id
         max_id = puzzles[0].id
-        existing_ids = datastore.get_ids(min_id, max_id)
-
+        existing_ids = tuple(datastore.get_ids(min_id, max_id))
         pre_puzzle_count = len(new_puzzles)
         new_puzzles += [p for p in puzzles if p.id not in existing_ids and p not in new_puzzles]
         post_puzzle_count = len(new_puzzles)
         page_number += 1
 
-    return new_puzzles
+    return tuple(new_puzzles)
 
 def get_index(url, page):
     """
