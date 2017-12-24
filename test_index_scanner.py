@@ -227,6 +227,9 @@ class IndexScannerTest(unittest.TestCase):
     @requests_mock.mock()
     @mock.patch("datastore_client.DatastoreClient")
     def test_filter_datastore_results(self, request_mock, datastore_mock):
+        """
+        Check that we don't return puzzles as new if already in the database.
+        """
         url = "https://www.theguardian.com/lifeandstyle/series/kakuro?page=1"
         real_index_file = open("test_index_page.html")
         content = real_index_file.read()
@@ -242,6 +245,9 @@ class IndexScannerTest(unittest.TestCase):
     @requests_mock.mock()
     @mock.patch("datastore_client.DatastoreClient")
     def test_search_next_page_if_needed(self, request_mock, datastore_mock):
+        """
+        Check that we load the next page of results if the last entry was a new puzzle.
+        """
         url = "https://www.theguardian.com/lifeandstyle/series/kakuro?page="
 
         real_index_file_1 = open("test_index_page.html")
@@ -257,10 +263,12 @@ class IndexScannerTest(unittest.TestCase):
         datastore_ids = tuple([1565, 1557, 1544]) # Won't load third page
         datastore_mock.get_ids.return_value = datastore_ids
         expected = tuple([p for p in self.real_puzzles.values() if p.id not in datastore_ids])
-        self.maxDiff = None
         self.assertEqual(index_scanner.get_new_puzzles(datastore_mock), expected)
 
     def test_parse_real_index_page(self):
+        """
+        Check we get expected results from a saved real page.
+        """
         real_index_file = open("test_index_page.html")
         content = real_index_file.read()
         real_index_file.close()
@@ -269,90 +277,138 @@ class IndexScannerTest(unittest.TestCase):
         self.assertEqual(index_scanner.parse_index(content), expected)
 
     def test_is_puzzle_section_with_id(self):
+        """
+        Identify puzzles on index page as <section> with ID
+        """
         section = bs4.BeautifulSoup("", "html.parser").new_tag("section", id="123")
         self.assertTrue(index_scanner.is_puzzle(section))
 
     def test_is_puzzle_section_no_id(self):
+        """
+        Not a puzzle if it doesn't have an ID
+        """
         section = bs4.BeautifulSoup("", "html.parser").new_tag("section")
         self.assertFalse(index_scanner.is_puzzle(section))
 
     def test_is_puzzle_othertag_with_id(self):
+        """
+        Not a puzzle if it isn't a section element
+        """
         section = bs4.BeautifulSoup("", "html.parser").new_tag("div", id="123")
         self.assertFalse(index_scanner.is_puzzle(section))
 
     def test_parse_section_all_fields(self):
+        """
+        Successfully parse a puzzle where all metadata populated
+        """
         expected = IndexPuzzle(self.puzzle_id, self.timestamp, self.page_url, self.difficulty)
         section = self.make_test_section_tag()
         result = index_scanner.parse_section(section)
         self.assertEqual(result, expected)
 
     def test_parse_section_no_titletag(self):
+        """
+        Throw error on parsing puzzle with no title text.
+        """
         section = self.make_test_section_tag()
         section.find("h1").extract()
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_section_no_titletext(self):
+        """
+        Throw error on parsing puzzle with blank title text.
+        """
         section = self.make_test_section_tag()
         section.find("h1").string = ""
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_section_without_id(self):
+        """
+        Throw error on parsing puzzle with title text lacking ID.
+        """
         section = self.make_test_section_tag()
         section.find("h1").string = f"Kakuro {self.difficulty.lower()}"
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_section_nonnumericid(self):
+        """
+        Throw error on parsing puzzle where ID in title text isn't a number.
+        """
         section = self.make_test_section_tag()
         section.find("h1").string = f"Kakuro abc {self.difficulty.lower()}"
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_section_notimetag(self):
+        """
+        Throw error on parsing puzzle with no time tag.
+        """
         section = self.make_test_section_tag()
         section.find("time").extract()
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_section_notimeattr(self):
+        """
+        Throw error on parsing puzzle with no timestamp in time tag.
+        """
         section = self.make_test_section_tag()
         del section.find("time").attrs['data-timestamp']
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_nonumeric_timestamp(self):
+        """
+        Throw error on parsing puzzle where timestamp is not a number.
+        """
         section = self.make_test_section_tag()
         section.find("time").attrs['data-timestamp'] = "abc"
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_section_nopagelink(self):
+        """
+        Throw error on parsing puzzle with no link to puzzle page.
+        """
         section = self.make_test_section_tag()
         section.find("a").extract()
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_section_nohref(self):
+        """
+        Throw error on parsing puzzle with missing link to puzzle page.
+        """
         section = self.make_test_section_tag()
         del section.find("a").attrs['href']
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_without_difficulty(self):
+        """
+        Throw error on parsing puzzle where title text is missing difficulty.
+        """
         section = self.make_test_section_tag()
         section.find("h1").string = f"Kakuro {self.puzzle_id}"
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def test_parse_invalid_difficulty(self):
+        """
+        Throw error on parsing puzzle with unknown difficulty.
+        """
         section = self.make_test_section_tag()
         section.find("h1").string = f"Kakuro {self.puzzle_id} okayish"
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
     def make_test_section_tag(self):
+        """
+        Make a standard <section> element with all attributes populated to be used in tests.
+        """
         section = bs4.BeautifulSoup("", "html.parser").new_tag("section", id=self.puzzle_id)
 
         time_tag = bs4.BeautifulSoup("", "html.parser").new_tag("time")

@@ -13,11 +13,12 @@ class DatastoreClient:
     CLOUD_PROJECT = "kakurizer"
     CLOUDSTORE_TYPE = "kakuro"
     MAX_PUT_SIZE = 500 # Maximum supported mutations in same transaction (Google-imposed limit)
+    DATASTORE_MAX_INT = 9223372036854775807
 
     def __init__(self):
         self.client = datastore.Client(project=self.CLOUD_PROJECT)
 
-    def get_ids(self, min_id=0, max_id=100):
+    def get_ids(self, min_id=-DATASTORE_MAX_INT, max_id=DATASTORE_MAX_INT):
         """
         Return a tuple of puzzle IDs which have been saved (in any state) to the database.
         Used to check if a puzzle already exists or not.
@@ -44,11 +45,11 @@ class DatastoreClient:
             puzzles = index_puzzles[chunk_start: chunk_start + self.MAX_PUT_SIZE]
             size = len(puzzles)
             keys = self.client.allocate_ids(partial_key, size)
-            entities = tuple(__make_index_puzzle(puzzles[p], keys[p]) for p in range(size))
+            entities = tuple(make_index_puzzle(puzzles[p], keys[p]) for p in range(size))
             self.client.put_multi(entities)
             logging.getLogger().info("Saved %s puzzles from index", size)
 
-def __make_index_puzzle(index_puzzle, final_key):
+def make_index_puzzle(index_puzzle, final_key):
     """
     Converts puzzle representation output from index_scanner script to Entity format
     used by Google Cloud Datastore.

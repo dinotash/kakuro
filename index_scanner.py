@@ -35,8 +35,6 @@ def get_new_puzzles(datastore):
     page_number = 1
     puzzles = tuple()
     new_puzzles = []
-    post_puzzle_count = 0
-    pre_puzzle_count = 0
 
     # Traverse the index until you stop finding new puzzles
     while (page_number == 1 or puzzles[-1] in new_puzzles):
@@ -45,9 +43,7 @@ def get_new_puzzles(datastore):
         min_id = puzzles[-1].id
         max_id = puzzles[0].id
         existing_ids = tuple(datastore.get_ids(min_id, max_id))
-        pre_puzzle_count = len(new_puzzles)
         new_puzzles += [p for p in puzzles if p.id not in existing_ids and p not in new_puzzles]
-        post_puzzle_count = len(new_puzzles)
         page_number += 1
 
     return tuple(new_puzzles)
@@ -169,7 +165,7 @@ def get_difficulty(section):
             return Difficulty.HARD.name
         else:
             raise ValueError("Unrecognized difficulty level: " + difficulty)
-    except IndexError:
+    except:
         raise ValueError("Unable to find difficulty in title text")
 
 if __name__ == "__main__":

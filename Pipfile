@@ -10,6 +10,8 @@ name = "pypi"
 requests = "*"
 "bs4" = "*"
 requests-mock = "*"
+google = "*"
+pexpect = "*"
 
 
 [dev-packages]
