@@ -33,20 +33,22 @@ def get_new_puzzles(datastore):
     :returns: Tuple of kakurizer_types.IndexPuzzle, each representing one new puzzle
     """
     page_number = 1
-    puzzles = tuple()
+    page_puzzles = []
+    new_page_puzzles = []
     new_puzzles = []
 
     # Traverse the index until you stop finding new puzzles
-    while (page_number == 1 or puzzles[-1] in new_puzzles):
+    while (page_number == 1 or page_puzzles[-1] in new_page_puzzles):
         logging.getLogger().info("Loading puzzles from page %s", str(page_number))
-        puzzles = parse_index(get_index(INDEX_URL, page_number))
-        min_id = puzzles[-1].id
-        max_id = puzzles[0].id
-        existing_ids = tuple(datastore.get_ids(min_id, max_id))
-        new_puzzles += [p for p in puzzles if p.id not in existing_ids and p not in new_puzzles]
+        page_puzzles = parse_index(get_index(INDEX_URL, page_number))
+        min_id = page_puzzles[-1].id
+        max_id = page_puzzles[0].id
+        existing_ids = datastore.get_ids(min_id, max_id)
+        new_page_puzzles = [p for p in page_puzzles if p.id not in existing_ids and p not in new_puzzles]
+        new_puzzles += new_page_puzzles
         page_number += 1
 
-    return tuple(new_puzzles)
+    return new_puzzles
 
 def get_index(url, page):
     """

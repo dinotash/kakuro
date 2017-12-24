@@ -236,10 +236,10 @@ class IndexScannerTest(unittest.TestCase):
         real_index_file.close()
         request_mock.get(url, text=content)
 
-        datastore_ids = tuple([1564, 1565, 1579]) # Includes last ID so won't load next page
+        datastore_ids = [1564, 1565, 1579] # Includes last ID so won't load next page
         datastore_mock.get_ids.return_value = datastore_ids
-        expected = tuple([p for p in self.real_puzzles.values()
-                          if p.id >= 1564 and p.id != 3006 and p.id not in datastore_ids])
+        expected = [p for p in self.real_puzzles.values()
+                    if p.id >= 1564 and p.id != 3006 and p.id not in datastore_ids]
         self.assertEqual(index_scanner.get_new_puzzles(datastore_mock), expected)
 
     @requests_mock.mock()
@@ -262,7 +262,7 @@ class IndexScannerTest(unittest.TestCase):
 
         datastore_ids = tuple([1565, 1557, 1544]) # Won't load third page
         datastore_mock.get_ids.return_value = datastore_ids
-        expected = tuple([p for p in self.real_puzzles.values() if p.id not in datastore_ids])
+        expected = [p for p in self.real_puzzles.values() if p.id not in datastore_ids]
         self.assertEqual(index_scanner.get_new_puzzles(datastore_mock), expected)
 
     def test_parse_real_index_page(self):
