@@ -9,6 +9,9 @@ import collections
 IndexPuzzle = collections.namedtuple('IndexPuzzle',
                                      ['id', 'timestamp_millis', 'page_url', 'difficulty'])
 
+ImageMetadata = collections.namedtuple('ImageMetadata',
+                                       ['width', 'height', 'format'])
+
 class Difficulty(Enum):
     """
     Defines the valid difficulty levels that a puzzle can be.

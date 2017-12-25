@@ -13,7 +13,7 @@ from kakurizer_types import IndexPuzzle, Difficulty
 
 INDEX_URL = "https://www.theguardian.com/lifeandstyle/series/kakuro?page="
 
-def main():
+def scan():
     """
     Checks the Guardian's index page for new puzzles, extracts the metadata
     and saves the results to Google Cloud datastore.
@@ -23,6 +23,7 @@ def main():
     new_puzzles = get_new_puzzles(datastore)
     logging.getLogger().info("Found %s new puzzles", len(new_puzzles))
     datastore.put_index_puzzles(new_puzzles)
+
 
 def get_new_puzzles(datastore):
     """
@@ -44,11 +45,13 @@ def get_new_puzzles(datastore):
         min_id = page_puzzles[-1].id
         max_id = page_puzzles[0].id
         existing_ids = datastore.get_ids(min_id, max_id)
-        new_page_puzzles = [p for p in page_puzzles if p.id not in existing_ids and p not in new_puzzles]
+        new_page_puzzles = [p for p in page_puzzles
+                            if p.id not in existing_ids and p not in new_puzzles]
         new_puzzles += new_page_puzzles
         page_number += 1
 
     return new_puzzles
+
 
 def get_index(url, page):
     """
@@ -60,6 +63,7 @@ def get_index(url, page):
     """
     response = requests.get(url + str(page))
     return response.text
+
 
 def parse_index(html):
     """
@@ -74,6 +78,7 @@ def parse_index(html):
     puzzle_sections = (section for section in all_sections if is_puzzle(section))
     return tuple(parse_section(section) for section in puzzle_sections)
 
+
 def is_puzzle(section):
     """
     Determine whether a <section> tag from the index page represents a puzzle or not.
@@ -84,6 +89,7 @@ def is_puzzle(section):
     return (isinstance(section, bs4.element.Tag)
             and section.name == "section"
             and 'id' in section.attrs)
+
 
 def parse_section(section):
     """
@@ -97,6 +103,7 @@ def parse_section(section):
     page_url = get_pageurl(section)
     difficulty = get_difficulty(section)
     return IndexPuzzle(puzzle_id, timestamp_millis, page_url, difficulty)
+
 
 def get_id(section):
     """
@@ -115,6 +122,7 @@ def get_id(section):
     except StopIteration:
         raise ValueError("Could not parse puzzle id from section title")
 
+
 def get_timestamp(section):
     """
     Extracts the timestamp at which the puzzle was published.
@@ -129,6 +137,7 @@ def get_timestamp(section):
         raise ValueError("Could not find timestamp in section")
     except KeyError:
         raise ValueError("Could not find data-timestamp attribute for timestamp")
+
 
 def get_pageurl(section):
     """
@@ -145,6 +154,7 @@ def get_pageurl(section):
         raise ValueError("Cannot find link to puzzle")
     except KeyError:
         raise ValueError("Cannot find href attribute on link to puzzle")
+
 
 def get_difficulty(section):
     """
@@ -170,5 +180,6 @@ def get_difficulty(section):
     except:
         raise ValueError("Unable to find difficulty in title text")
 
+
 if __name__ == "__main__":
-    main()
+    scan()

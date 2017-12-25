@@ -18,6 +18,7 @@ class DatastoreClient:
     def __init__(self):
         self.client = datastore.Client(project=self.CLOUD_PROJECT)
 
+
     def get_ids(self, min_id=-DATASTORE_MAX_INT, max_id=DATASTORE_MAX_INT):
         """
         Return a tuple of puzzle IDs which have been saved (in any state) to the database.
@@ -32,6 +33,15 @@ class DatastoreClient:
         query.add_filter('id', '<=', max_id)
         return (puzzle['id'] for puzzle in query.fetch())
 
+
+    def get_index_puzzles(self, min_id=-DATASTORE_MAX_INT, max_id=DATASTORE_MAX_INT):
+        query = self.client.query(kind=self.CLOUDSTORE_TYPE)
+        query.add_filter('id', '>=', min_id)
+        query.add_filter('id', '<=', max_id)
+        query.add_filter('has_img', '=', False)
+        return [puzzle for puzzle in query.fetch()]
+
+
     def put_index_puzzles(self, index_puzzles):
         """
         Saves a set of puzzles to Google Cloud Datastore. This is used with puzzle
@@ -39,17 +49,28 @@ class DatastoreClient:
         set.
 
         :param index_puzzles: List or tuple of kakurizer_types.IndexPuzzle
+        :returns: void
         """
         partial_key = self.client.key(self.CLOUDSTORE_TYPE)
         for chunk_start in range(0, len(index_puzzles), self.MAX_PUT_SIZE):
             puzzles = index_puzzles[chunk_start: chunk_start + self.MAX_PUT_SIZE]
             size = len(puzzles)
             keys = self.client.allocate_ids(partial_key, size)
-            entities = tuple(make_index_puzzle(puzzles[p], keys[p]) for p in range(size))
+            entities = tuple(prepare_index_puzzle(puzzles[p], keys[p]) for p in range(size))
             self.client.put_multi(entities)
             logging.getLogger().info("Saved %s puzzles from index", size)
 
-def make_index_puzzle(index_puzzle, final_key):
+
+    def update(self, entity):
+        """
+        :param entities: List or tuple of google.cloud.datastore.entity.Entity with updated values
+        :returns: void
+        """
+        self.client.put(entity)
+        logging.getLogger().info("Updated puzzle %s", entity['id'])
+
+
+def prepare_index_puzzle(index_puzzle, final_key):
     """
     Converts puzzle representation output from index_scanner script to Entity format
     used by Google Cloud Datastore.
@@ -63,4 +84,7 @@ def make_index_puzzle(index_puzzle, final_key):
     entity['timestamp_millis'] = index_puzzle.timestamp_millis
     entity['difficulty'] = index_puzzle.difficulty
     entity['page_url'] = index_puzzle.page_url
+    entity['has_img'] = False
+    entity['has_clues'] = False
+    entity['has_solution'] = False
     return entity
