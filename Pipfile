@@ -12,6 +12,7 @@ requests = "*"
 requests-mock = "*"
 google = "*"
 pexpect = "*"
+pillow = "*"
 
 
 [dev-packages]

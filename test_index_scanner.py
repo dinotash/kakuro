@@ -224,6 +224,7 @@ class IndexScannerTest(unittest.TestCase):
             difficulty='HARD'),
     }
 
+
     @requests_mock.mock()
     @mock.patch("datastore_client.DatastoreClient")
     def test_filter_datastore_results(self, request_mock, datastore_mock):
@@ -241,6 +242,7 @@ class IndexScannerTest(unittest.TestCase):
         expected = [p for p in self.real_puzzles.values()
                     if p.id >= 1564 and p.id != 3006 and p.id not in datastore_ids]
         self.assertEqual(index_scanner.get_new_puzzles(datastore_mock), expected)
+
 
     @requests_mock.mock()
     @mock.patch("datastore_client.DatastoreClient")
@@ -265,6 +267,7 @@ class IndexScannerTest(unittest.TestCase):
         expected = [p for p in self.real_puzzles.values() if p.id not in datastore_ids]
         self.assertEqual(index_scanner.get_new_puzzles(datastore_mock), expected)
 
+
     def test_parse_real_index_page(self):
         """
         Check we get expected results from a saved real page.
@@ -276,12 +279,14 @@ class IndexScannerTest(unittest.TestCase):
                           if p.id >= 1564 and p.id != 3006])
         self.assertEqual(index_scanner.parse_index(content), expected)
 
+
     def test_is_puzzle_section_with_id(self):
         """
         Identify puzzles on index page as <section> with ID
         """
         section = bs4.BeautifulSoup("", "html.parser").new_tag("section", id="123")
         self.assertTrue(index_scanner.is_puzzle(section))
+
 
     def test_is_puzzle_section_no_id(self):
         """
@@ -290,12 +295,14 @@ class IndexScannerTest(unittest.TestCase):
         section = bs4.BeautifulSoup("", "html.parser").new_tag("section")
         self.assertFalse(index_scanner.is_puzzle(section))
 
+
     def test_is_puzzle_othertag_with_id(self):
         """
         Not a puzzle if it isn't a section element
         """
         section = bs4.BeautifulSoup("", "html.parser").new_tag("div", id="123")
         self.assertFalse(index_scanner.is_puzzle(section))
+
 
     def test_parse_section_all_fields(self):
         """
@@ -306,6 +313,7 @@ class IndexScannerTest(unittest.TestCase):
         result = index_scanner.parse_section(section)
         self.assertEqual(result, expected)
 
+
     def test_parse_section_no_titletag(self):
         """
         Throw error on parsing puzzle with no title text.
@@ -314,6 +322,7 @@ class IndexScannerTest(unittest.TestCase):
         section.find("h1").extract()
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
+
 
     def test_parse_section_no_titletext(self):
         """
@@ -324,6 +333,7 @@ class IndexScannerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
+
     def test_parse_section_without_id(self):
         """
         Throw error on parsing puzzle with title text lacking ID.
@@ -332,6 +342,7 @@ class IndexScannerTest(unittest.TestCase):
         section.find("h1").string = f"Kakuro {self.difficulty.lower()}"
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
+
 
     def test_parse_section_nonnumericid(self):
         """
@@ -342,6 +353,7 @@ class IndexScannerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
+
     def test_parse_section_notimetag(self):
         """
         Throw error on parsing puzzle with no time tag.
@@ -350,6 +362,7 @@ class IndexScannerTest(unittest.TestCase):
         section.find("time").extract()
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
+
 
     def test_parse_section_notimeattr(self):
         """
@@ -360,6 +373,7 @@ class IndexScannerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
+
     def test_parse_nonumeric_timestamp(self):
         """
         Throw error on parsing puzzle where timestamp is not a number.
@@ -368,6 +382,7 @@ class IndexScannerTest(unittest.TestCase):
         section.find("time").attrs['data-timestamp'] = "abc"
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
+
 
     def test_parse_section_nopagelink(self):
         """
@@ -378,6 +393,7 @@ class IndexScannerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
+
     def test_parse_section_nohref(self):
         """
         Throw error on parsing puzzle with missing link to puzzle page.
@@ -386,6 +402,7 @@ class IndexScannerTest(unittest.TestCase):
         del section.find("a").attrs['href']
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
+
 
     def test_parse_without_difficulty(self):
         """
@@ -396,6 +413,7 @@ class IndexScannerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
 
+
     def test_parse_invalid_difficulty(self):
         """
         Throw error on parsing puzzle with unknown difficulty.
@@ -404,6 +422,7 @@ class IndexScannerTest(unittest.TestCase):
         section.find("h1").string = f"Kakuro {self.puzzle_id} okayish"
         with self.assertRaises(ValueError):
             index_scanner.parse_section(section)
+
 
     def make_test_section_tag(self):
         """
@@ -426,6 +445,7 @@ class IndexScannerTest(unittest.TestCase):
         section.append(h1_tag)
 
         return section
+
 
 if __name__ == '__main__':
     unittest.main()

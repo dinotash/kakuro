@@ -58,5 +58,49 @@ class IndexScannerTest(unittest.TestCase):
         db_client.put_index_puzzles([puzzle_two])
         self.assertEqual(tuple(db_client.get_ids()), (1, 2))
 
+    def test_get_puzzles(self):
+        """
+        Check we can get back what we put into the database
+        """
+        db_client = DatastoreClient()
+
+        puzzle = IndexPuzzle(id=1, timestamp_millis=123, page_url="link", difficulty="HARD")
+        db_client.put_index_puzzles([puzzle])
+
+        results = db_client.get_index_puzzles()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['id'], puzzle.id)
+        self.assertEqual(results[0]['timestamp_millis'], puzzle.timestamp_millis)
+        self.assertEqual(results[0]['page_url'], puzzle.page_url)
+        self.assertEqual(results[0]['difficulty'], puzzle.difficulty)
+
+    def test_update(self):
+        """
+        Check we can get back the updated version after changing an entry in the database.
+        """
+        db_client = DatastoreClient()
+
+        puzzle = IndexPuzzle(id=1, timestamp_millis=123, page_url="link", difficulty="HARD")
+        db_client.put_index_puzzles([puzzle])
+        entity = db_client.get_index_puzzles()[0]
+
+        new_id = 678
+        new_timestamp = 10000
+        img_url = "wheel.jpg"
+
+        entity['id'] = new_id
+        entity['timestamp_millis'] = new_timestamp
+        entity['img_url'] = img_url
+        db_client.update(entity)
+
+        results = db_client.get_index_puzzles()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['id'], new_id)
+        self.assertEqual(results[0]['timestamp_millis'], new_timestamp)
+        self.assertEqual(results[0]['img_url'], img_url)
+        self.assertEqual(results[0]['page_url'], puzzle.page_url)
+        self.assertEqual(results[0]['difficulty'], puzzle.difficulty)
+
+
 if __name__ == '__main__':
     unittest.main()
